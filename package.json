@@ -1,0 +1,14 @@
+{
+  "name": "ragui",
+  "version": "0.1.0",
+  "description": "A markdown editor with WebAssembly",
+  "repository": "https://github.com/huskyhoochu/ragui.git",
+  "main": "index.js",
+  "author": "huskyhoochu <dfg1499@gmail.com> (https://www.huskyhoochu.com)",
+  "license": "MIT",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
