@@ -1,20 +1,30 @@
 const path = require("path");
 const nodeExternals = require("webpack-node-externals");
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const WasmPackPlugin = require("@wasm-tool/wasm-pack-plugin");
 
 module.exports = {
   mode: "production",
-  devtool: "source-map",
   entry: "./app/index.tsx",
-  target: 'electron-renderer',
+  target: "electron-renderer",
   output: {
     filename: "index.js",
     path: path.resolve(__dirname, "dist"),
-    libraryTarget: 'commonjs2',
+    libraryTarget: "commonjs2",
   },
   resolve: {
-    extensions: [".tsx", ".ts", ".js"],
+    modules: ['node_modules'],
+    extensions: [".tsx", ".ts", ".js", ".wasm"],
   },
   externals: [nodeExternals()],
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: 'index.html',
+    }),
+    new WasmPackPlugin({
+      crateDirectory: path.resolve(__dirname, '.'),
+    }),
+  ],
   module: {
     rules: [
       {
@@ -54,6 +64,7 @@ module.exports = {
                     usESModules: true,
                   },
                 ],
+                "@babel/plugin-syntax-dynamic-import",
               ],
               cacheDirectory: true,
               cacheCompression: false,
