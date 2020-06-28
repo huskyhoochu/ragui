@@ -4,7 +4,8 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const WasmPackPlugin = require("@wasm-tool/wasm-pack-plugin");
 
 module.exports = {
-  mode: "production",
+  mode: "development",
+  devtool: "cheap-module-eval-source-map",
   entry: "./app/index.tsx",
   target: "electron-renderer",
   output: {
