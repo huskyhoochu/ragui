@@ -1,4 +1,5 @@
 mod ragui_parser;
+mod token_parser;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
