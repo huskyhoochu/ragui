@@ -5,6 +5,7 @@ enum MDTypes {
   Paragraph,
   Bold,
   Italics,
+  Blockquote,
   Text,
 }
 
@@ -31,15 +32,23 @@ struct Parser {
   cursor: usize,
 }
 
-/// TODO:
-/// docs 순회 [0]
-/// 줄바꿈 단위로 문장 저장 [0]
-/// 현재 글자 추출 [0]
-/// 현재 글자 및 다음 글자를 받아 어떤 타입인지 파악 [0]
-/// 블록 타입 ? 줄바꿈이 나올 때까지 글자를 모은다
-/// 인라인 타입 ? 다음 타입이 나올 때까지 글자를 모은다 
-/// 토큰으로 저장
-/// 토큰 트리에 저장
+/// TODO: Block (2/14)
+/// Heading [o]
+/// Paragraph [o]
+/// Blockquote [o]
+/// Hr []
+/// Codeblock []
+/// Ordered List []
+/// Unordered List []
+/// 
+/// TODO: Inline
+/// Bold []
+/// Italic []
+/// Underline []
+/// Strikeline []
+/// Link []
+/// Image []
+/// Code []
 
 
 impl Parser {
@@ -55,7 +64,8 @@ impl Parser {
     for line in line_list {
       let atoms = match self.current_char(&line) {
         '#' => self.parse_heading(line),
-        _ => self.parse_heading(line),
+        '>' => self.parse_quote(line),
+        _ => self.parse_paragraph(line),
       };
 
       result.push(atoms);
@@ -81,6 +91,17 @@ impl Parser {
     self.reset_cursor();
 
     Atom { types: MDTypes::Paragraph, layout: MDLayout::Block, value: text }
+  }
+
+  /// 인용문을 파싱한다
+  fn parse_quote(&mut self, line: String) -> Atom {
+    let quote = self.collect_while(&line, |c| c == '>');
+    self.drop_whitespace(&line);
+
+    let text = self.collect_line(&line);
+    self.reset_cursor();
+
+    Atom { types: MDTypes::Blockquote, layout: MDLayout::Block, value: text }
   }
 
 
@@ -168,6 +189,14 @@ mod tests {
 
     let docs = "# 안녕하세요\n".to_string();
     assert_eq!(parser.parse_heading(docs).types, MDTypes::Heading(1));
+  }
+
+  #[test]
+  fn parse_quote() {
+    let mut parser = Parser::new();
+
+    let docs = "> 언제나 아름답기를\n".to_string();
+    assert_eq!(parser.parse_quote(docs).types, MDTypes::Blockquote);
   }
 
   #[test]
