@@ -7,6 +7,7 @@ enum MDTypes {
   Italics,
   Blockquote,
   Text,
+  UnOrdList,
 }
 
 #[derive(Debug)]
@@ -62,9 +63,10 @@ impl Parser {
     let mut result = vec![];
 
     for line in line_list {
-      let atoms = match self.current_char(&line) {
-        '#' => self.parse_heading(line),
-        '>' => self.parse_quote(line),
+      let atoms = match self.cur_next_char(&line) {
+        ('#', _) => self.parse_heading(line),
+        ('>', _) => self.parse_quote(line),
+        ('-', ' ') => self.
         _ => self.parse_paragraph(line),
       };
 
@@ -75,7 +77,7 @@ impl Parser {
   }
 
   /// 제목을 파싱한다
-  fn parse_heading(&mut self, line: String) -> Atom { 
+  fn parse_heading(&mut self, line: String) -> Atom {
     let headings = self.collect_while(&line, |c| c == '#');
     self.drop_whitespace(&line);
 
@@ -95,7 +97,7 @@ impl Parser {
 
   /// 인용문을 파싱한다
   fn parse_quote(&mut self, line: String) -> Atom {
-    let quote = self.collect_while(&line, |c| c == '>');
+    self.collect_while(&line, |c| c == '>');
     self.drop_whitespace(&line);
 
     let text = self.collect_line(&line);
@@ -104,6 +106,15 @@ impl Parser {
     Atom { types: MDTypes::Blockquote, layout: MDLayout::Block, value: text }
   }
 
+  fn parse_ul(&mut self, line: String) -> Atom {
+    self.collect_while(&line, |c| c == '-');
+    self.drop_whitespace(&line);
+
+    let text = self.collect_line(&line);
+    self.reset_cursor();
+
+    Atom { types: MDTypes::UnOrdList, layout: MDLayout::Block, value: text }
+  }
 
   /// 전체 문서를 줄바꿈 단위로 분할 저장한다
   fn parse_line(&mut self, docs: String) -> Vec<String> {
@@ -136,6 +147,14 @@ impl Parser {
   /// 주어진 문장의 현재 위치 글자를 출력한다
   fn current_char(&self, docs: &String) -> char {
     docs[self.cursor..].chars().next().unwrap()
+  }
+
+  /// 주어진 문장의 현재 글자와 다음 글자를 출력한다
+  fn cur_next_char(&mut self, docs: &String) -> (char, char) {
+    let cur = self.collect_char(&docs);
+    let next = self.collect_char(&docs);
+    self.reset_cursor();
+    (cur, next)
   }
 
   /// 주어진 문장의 현재 위치 글자를 출력하고
@@ -205,6 +224,8 @@ mod tests {
     let docs = "# 애국가\n## 작 안익태\n동해물과 백두산이 마르고 닳도록\n하느님이 보우하사 우리나라 만세\n".to_string();
 
     let first_tree = parser.parse_first_tree(docs);
+    println!("{:?}", first_tree);
+
     assert_eq!(first_tree.len(), 4);
 
   }
