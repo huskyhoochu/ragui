@@ -8,7 +8,7 @@ const App: React.FC = () => {
   useEffect(() => {
     async function fetchWasm() {
       const parser = await import('../pkg');
-      parserRef.current = parser.parse;
+      parserRef.current = parser.ragui;
     }
 
     fetchWasm().catch(e => console.error(e));
@@ -22,11 +22,7 @@ const App: React.FC = () => {
   return (
     <div>
       <textarea name="input" id="input" cols={60} rows={30} onChange={onChange} />
-      <div
-        dangerouslySetInnerHTML={{
-          __html: html,
-        }}
-      />
+      <p>{html}</p>
     </div>
   );
 };
