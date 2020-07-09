@@ -1,27 +1,21 @@
 use regex::Regex;
 
-struct Rule<'a> {
+pub struct Rule<'a> {
   rule: Regex,
   element: &'a str,
 }
 
-trait Checkerable {
-  fn is_a(&self, line: &str) -> Option<String>;
-}
-
-impl<'a> Checkerable for Rule<'a> {
-  fn is_a(&self, line: &str) -> Option<String> {
-    if self.rule.is_match(line) {
-      Some(format!("{}", self.element))
-    } else {
-      None
-    }
-  }
-}
-
 impl<'a> Rule<'a> {
-  fn new(re: Regex, element: &'a str) -> Rule {
+  pub fn new(re: Regex, element: &'a str) -> Rule {
     Rule { rule: re, element }
+  }
+
+  pub fn is(&self, line: &str) -> bool {
+    self.rule.is_match(line)
+  }
+
+  pub fn format(&self) -> &str {
+    self.element
   }
 }
 
@@ -32,6 +26,6 @@ mod tests {
   #[test]
   fn is_heading() {
     let wow = Rule::new(Regex::new(r"^#{1,6}\s").unwrap(), "heading");
-    assert_eq!(wow.is_a("# wow").unwrap(), "heading".to_string());
+    assert!(wow.is("# wow"));
   }
 }
