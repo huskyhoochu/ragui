@@ -1,5 +1,6 @@
 mod ragui_parser;
 mod parser;
+mod ruler;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -10,6 +11,6 @@ pub fn parse(input: &str) -> String {
 
 #[wasm_bindgen]
 pub fn ragui(input: &str) -> String {
-  let result = parser::parse(input);
-  result
+  let parsed = parser::parse(input);
+  parsed.join("\n")
 }

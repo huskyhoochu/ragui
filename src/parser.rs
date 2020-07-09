@@ -1,40 +1,43 @@
 use regex::Regex;
 
-struct Parser {
-  docs: String,
+pub fn parse<'a>(input: &'a str) -> Vec<String> {
+  let mut parser = Parser::new(input);
+  parser.hunting_line()
 }
 
-pub fn parse(input: &str) -> String {
-  let docs = normalize(input);
-  let mut parser = Parser::new(docs);
-  let result = parser.hunting_line();
-  let joined = result.join("\n");
-  joined
+struct Parser<'a> {
+  docs: &'a str,
 }
 
-impl Parser {
-  /// 순회를 위해 필요한 것
-  /// 커서를 이용해 스트링을 슬라이스로 만들어
-  /// 문서가 끝날 때까지 한 칸씩 순회한다
-  /// 순회하기 전에 줄바꿈을 정규화하고
-  /// 순회가 시작되면 먼저 줄바꿈이 나타날 때까지 글자를 모아다가
-  /// 줄바꿈이 나타나면 그때까지 모은 글자를 하나의 원소로
-  /// 동적 배열에 넣는다
-  /// 이 작업이 끝나면
-  /// 배열을 순회 돌리면서
-  /// 각 라인을 정규표현식에 대입해 블록 타입을 산출한다
-  ///
-  /// 
-  /// 
-  fn new(input: String) -> Parser {
+impl<'a> Parser<'a> {
+  fn new(input: &'a str) -> Parser {
     Parser { docs: input }
+  }
+
+  fn normalize(&mut self) -> String {
+    let has_carriage = Regex::new(r"\r\n?").unwrap();
+    let not_end_newline = Regex::new(r"\n$").unwrap();
+    let too_many_newline = Regex::new(r"\n+$").unwrap();
+  
+    let mut result = has_carriage.replace_all(self.docs, "\n").into_owned();
+  
+    if !not_end_newline.is_match(&result) {
+      result.push_str("\n");
+    } 
+    
+    if too_many_newline.is_match(&result) {
+      result = too_many_newline.replace_all(&result, "\n").into_owned();    
+    }
+  
+    result
   }
 
   fn hunting_line(&mut self) -> Vec<String> {
     let mut vec: Vec<String> = Vec::new();
+    let normalized = self.normalize();
 
     let mut one_line = String::new();
-      for (_, char) in self.docs.chars().enumerate() {
+      for (_, char) in normalized.chars().enumerate() {
         if char != '\n' {
           one_line.push(char);
         } else {
@@ -47,48 +50,29 @@ impl Parser {
   }
 }
 
-fn normalize<'a>(docs: &'a str) -> String {
-  let has_carriage = Regex::new(r"\r\n?").unwrap();
-  let not_end_newline = Regex::new(r"\n$").unwrap();
-  let too_many_newline = Regex::new(r"\n+$").unwrap();
-
-  let mut result = has_carriage.replace_all(docs, "\n").into_owned();
-
-  if !not_end_newline.is_match(&result) {
-    result.push_str("\n");
-  }  if too_many_newline.is_match(&result) {
-    let wow = too_many_newline.replace_all(&result, "\n");
-    result = wow.into_owned();
-  }
-
-  result
-}
-
 #[cfg(test)]
 mod tests {
   use super::*;
-  use normalize;
 
   #[test]
   fn test_normalize() {
-    let docs = "안녕하세요\r\n오늘은 참 맑네요\n이럴수가\r";
-    assert_eq!(normalize(docs), "안녕하세요\n오늘은 참 맑네요\n이럴수가\n");
+    let mut docs = Parser::new("안녕하세요\r\n오늘은 참 맑네요\n이럴수가\r");
+    assert_eq!(docs.normalize(), "안녕하세요\n오늘은 참 맑네요\n이럴수가\n".to_string());
 
-    let docs = "줄바꿈없음";
-    assert_eq!(normalize(docs), "줄바꿈없음\n");
+    let mut docs = Parser::new("줄바꿈없음");
+    assert_eq!(docs.normalize(), "줄바꿈없음\n".to_string());
 
-    let docs = "줄바꿈 두개\n\n";
-    assert_eq!(normalize(docs), "줄바꿈 두개\n");
+    let mut docs = Parser::new("줄바꿈 두개\n\n");
+    assert_eq!(docs.normalize(), "줄바꿈 두개\n".to_string());
 
-    let docs = "줄바꿈 네개\n\n\n\n";
-    assert_eq!(normalize(docs), "줄바꿈 네개\n");
+    let mut docs = Parser::new("줄바꿈 네개\n\n\n\n");
+    assert_eq!(docs.normalize(), "줄바꿈 네개\n".to_string());
   }
 
   #[test]
   fn hunting_line() {
     let docs = "안녕하세요\r\n오늘은 참 맑네요\n이럴수가\r동해물과baekdusan\n마르고 닳도록";
-    let normalized = normalize(docs);
-    let mut parser = Parser::new(normalized);
+    let mut parser = Parser::new(docs);
     let list = parser.hunting_line();
     let joined = list.join("\n");
 
