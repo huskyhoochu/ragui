@@ -2,6 +2,7 @@ mod ragui_parser;
 mod parser;
 mod ruler;
 mod tokenizer;
+mod normalizer;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
