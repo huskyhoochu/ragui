@@ -1,66 +1,105 @@
 use regex::Regex;
-use super::ruler;
-use super::parser;
+use std::clone::Clone;
+use crate::rules::*;
 
-/// 얘네가 해야 할 일
-/// ruler를 받아서 각종 규칙을 생성한다
-/// 벡터를 받아서 돌린다
-/// 돌리면서 ruler들을 통과시킨다
-/// 일치하는 rule을 발견하면 토큰으로 만들어 트리에 저장한다
-/// 트리는 어디에 있나??
-/// 
-/// 
-
-enum Layout {
-  Block,
-  Inline,
+struct Token< T: Parser> {
+  rule: T,
+  value: String,
+  html: String,
+  pub children: Vec<Token<T>>,
 }
 
-struct Token {
-  layout: Layout, // 레이아웃: 블럭, 인라인
-  value: String, // 값
-  line: usize, // 몇번째 라인
-  position: usize, // 몇번째 포지션 <- 정렬 및 검색, 치환에 사용
-}
-
-struct Tokenizer {}
-
-impl Tokenizer {
-  // 생성자
-  fn new() -> Tokenizer {
-    Tokenizer {}
+impl<T: Parser> Token<T> {
+  fn new(rule: T, value: String) -> Token<T> {
+    Token { rule, value, html: String::new(), children: Vec::new() }
   }
-  // 순회 및 매칭
-  fn traverse(&self, list: Vec<String>) {
-    let heading = ruler::Rule::new(Regex::new(r"^#{1,6}\s").unwrap(), "heading");
-    let hr = ruler::Rule::new(Regex::new(r"^-{3}").unwrap(), "hr");
-    let blockquote = ruler::Rule::new(Regex::new(r"^>\s").unwrap(), "blockquote");
-    let ol = ruler::Rule::new(Regex::new(r"^\d\.\s").unwrap(), "ol");
-    let ul = ruler::Rule::new(Regex::new(r"^[*-]\s").unwrap(), "ul");
-    let codeblock = ruler::Rule::new(Regex::new(r"^`{3}").unwrap(), "codeblock");
 
-    let rules = vec![heading, hr, blockquote, ol, ul, codeblock];
+  fn get_rule(&self) -> &T {
+    &self.rule
+  }
 
-    for line in list {
-      for rule in &rules {
-        if rule.is(&line) {
-          println!("{}, {}", rule.format(), line);
-        }
+  fn get_value(&self) -> &String {
+    &self.value
+  }
+
+  fn get_html(&self) -> &String {
+    &self.html
+  }
+
+  fn size(&self) -> usize {
+    self.children.len()
+  }
+
+  fn set_child(&mut self, token: Token<T>, index: usize) {
+    self.children.insert(index, token);
+  }
+
+  fn get_child(&self, index: usize) -> &Token<T> {
+    &self.children[index]
+  }
+}
+
+struct Tokenizer<T: Parser> {
+  rules_block: Vec<T>,
+  rules_inline: Vec<T>,
+}
+
+
+impl<T> Tokenizer<T> where T: Clone + Parser {
+  fn new(rules_block: Vec<T>, rules_inline: Vec<T>) -> Tokenizer<T> {
+    Tokenizer { rules_block, rules_inline }
+  }
+
+  fn parse_block(&self, line: &str) -> Token<T> {
+    let paragraph = T::new(MDTypes::Paragraph, Regex::new(r"(.*)").unwrap());
+    let mut result = Token::new(paragraph, String::from(line));
+    for rule in self.rules_block.iter() {
+      if rule.get_rule().is_match(line) {
+        result = Token::new(rule.clone(),String::from(line));
       }
     }
+
+    result
+
+  }
+
+  fn tokenize(&mut self, lines: Vec<&str>) -> Vec<Token<T>> {
+    let lines_iter = lines.iter();
+    let mut result = Vec::new();
+
+    for line in lines_iter {
+      let token = self.parse_block(line);
+      result.push(token);
+    }
+
+    result
   }
 }
+
 
 #[cfg(test)]
 mod tests {
   use super::*;
+  use regex::Regex;
+  use crate::normalizer::Normalizer;
+  use crate::rules::{Rule};
 
   #[test]
-  fn test_traverse() {
-    let docs = "## 우리집\n강아지는 복슬강아지\n---\n> 동요임\n";
-    let parsed = parser::parse(docs);
-    let tokenizer = Tokenizer::new();
-    tokenizer.traverse(parsed);
-  }
+  fn test_parse_block() {
+    let docs = String::from("안녕하세요\r\n오늘은 참 맑네요\n이럴수가\r");
+    let normalizer = Normalizer::new(docs);
+    let normalized = normalizer.get();
 
+    let paragraph = Rule::new(MDTypes::Paragraph, Regex::new(r"(.*)").unwrap());
+    let mut rules_block = Vec::new();
+    rules_block.push(paragraph);
+
+    let strong = Rule::new(MDTypes::Strong, Regex::new(r"(\*\*|__)(.+)(\*\*|__)").unwrap());
+    let mut rules_inline = Vec::new();
+    rules_inline.push(strong);
+
+    let mut tokenizer = Tokenizer::new(rules_block, rules_inline);
+    let tokens = tokenizer.tokenize(normalized);
+    assert_eq!(tokens.len(), 4);
+  }
 }

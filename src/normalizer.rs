@@ -1,13 +1,12 @@
 use regex::Regex;
-use std::mem;
 
-struct Normalizer {
-    _normalized: String,
+pub struct Normalizer {
+    normalized: String,
 }
 
 impl Normalizer {
-    fn new(text: String) -> Normalizer {
-        let mut normalizer = Normalizer { _normalized: String::new() };
+    pub fn new(text: String) -> Normalizer {
+        let mut normalizer = Normalizer { normalized: String::new() };
         normalizer.normalize(text);
         normalizer
     }
@@ -20,11 +19,11 @@ impl Normalizer {
             .replace_all(result.as_str(), "\n")
             .into_owned();
 
-        self._normalized = result;
+        self.normalized = result;
     }
 
     pub fn get(&self) -> Vec<&str> {
-        self._normalized.split("\n").collect()
+        self.normalized.split("\n").collect()
     }
 }
 
