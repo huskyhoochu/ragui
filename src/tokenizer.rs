@@ -2,16 +2,18 @@ use regex::Regex;
 use std::clone::Clone;
 use crate::rules::*;
 
-struct Token< T: Parser> {
+struct Token<T> where T: Clone + Parser {
   rule: T,
   value: String,
   html: String,
   pub children: Vec<Token<T>>,
 }
 
-impl<T: Parser> Token<T> {
+impl<T> Token<T> where T: Clone + Parser {
   fn new(rule: T, value: String) -> Token<T> {
-    Token { rule, value, html: String::new(), children: Vec::new() }
+    let mut token = Token { rule, value, html: String::new(), children: Vec::new() };
+    token.set_html(token.rule.parse(token.value.as_str(), token.rule.get_parse_expr()));
+    token
   }
 
   fn get_rule(&self) -> &T {
@@ -43,7 +45,7 @@ impl<T: Parser> Token<T> {
   }
 }
 
-struct Tokenizer<T: Parser> {
+struct Tokenizer<T> where T: Clone + Parser {
   rules_block: Vec<T>,
   rules_inline: Vec<T>,
 }
@@ -55,7 +57,7 @@ impl<T> Tokenizer<T> where T: Clone + Parser {
   }
 
   fn parse_block(&self, line: &str) -> Token<T> {
-    let paragraph = T::new(MDTypes::Paragraph, Regex::new(r"(.*)").unwrap());
+    let paragraph = T::new(MDTypes::Paragraph, Regex::new(r"(?P<first>.*)").unwrap(), String::from("<p>$first</p>"));
     let mut result = Token::new(paragraph, String::from(line));
     for rule in self.rules_block.iter() {
       if rule.get_rule().is_match(line) {
@@ -94,11 +96,11 @@ mod tests {
     let normalizer = Normalizer::new(docs);
     let normalized = normalizer.get();
 
-    let paragraph = Rule::new(MDTypes::Paragraph, Regex::new(r"(.*)").unwrap());
+    let paragraph = Rule::new(MDTypes::Paragraph, Regex::new(r"(?P<first>.*)").unwrap(), String::from("<p>$first</p>"));
     let mut rules_block = Vec::new();
     rules_block.push(paragraph);
 
-    let strong = Rule::new(MDTypes::Strong, Regex::new(r"(\*\*|__)(.+)(\*\*|__)").unwrap());
+    let strong = Rule::new(MDTypes::Strong, Regex::new(r"(\*\*|__)(?P<first>.+)(\*\*|__)").unwrap(), String::from("<strong>$first</strong>"));
     let mut rules_inline = Vec::new();
     rules_inline.push(strong);
 
