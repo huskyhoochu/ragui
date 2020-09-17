@@ -25,21 +25,21 @@ pub trait Parser {
 #[derive(Clone)]
 pub struct Rule {
     name: MDTypes,
-    rule: Regex,
+    regex: Regex,
     parse_expr: String,
 }
 
 impl Parser for Rule {
-    fn new(name: MDTypes, rule: Regex, parse_expr: String) -> Self {
-        Rule { name, rule, parse_expr }
+    fn new(name: MDTypes, regex: Regex, parse_expr: String) -> Self {
+        Rule { name, regex, parse_expr }
     }
 
     fn parse(&self, line: &str, expr: &String) -> String {
-        self.rule.replace(line, expr.as_str()).to_string()
+        self.regex.replace(line, expr.as_str()).to_string()
     }
 
     fn get_rule(&self) -> &Regex {
-        &self.rule
+        &self.regex
     }
 
     fn get_parse_expr(&self) -> &String {
