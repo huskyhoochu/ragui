@@ -17,8 +17,7 @@ pub enum MDTypes {
 
 pub trait Parser {
     fn new(name: MDTypes, rule: Regex) -> Self;
-    fn parse<F>(&self, line: &str,  f: F) -> String
-        where F: FnMut(&Captures) -> String;
+    fn parse(&self, line: &str,  expr: &str) -> String;
     fn get_rule(&self) -> &Regex;
 }
 
@@ -33,9 +32,8 @@ impl Parser for Rule  {
         Rule { name, rule }
     }
 
-    fn parse<F>(&self, line: &str, f: F) -> String
-        where F: FnMut(&Captures) -> String {
-        self.rule.replace(line, f).to_string()
+    fn parse(&self, line: &str, expr: &str) -> String {
+        self.rule.replace(line, expr).to_string()
     }
 
     fn get_rule(&self) -> &Regex {

@@ -26,6 +26,10 @@ impl<T: Parser> Token<T> {
     &self.html
   }
 
+  fn set_html(&mut self, html: String) {
+    self.html = html;
+  }
+
   fn size(&self) -> usize {
     self.children.len()
   }
