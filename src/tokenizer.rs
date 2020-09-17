@@ -60,7 +60,7 @@ impl<T> Tokenizer<T> where T: Clone + Parser {
     let paragraph = T::new(MDTypes::Paragraph, Regex::new(r"(?P<first>.*)").unwrap(), String::from("<p>$first</p>"));
     let mut result = Token::new(paragraph, String::from(line));
     for rule in self.rules_block.iter() {
-      if rule.get_rule().is_match(line) {
+      if rule.get_regex().is_match(line) {
         result = Token::new(rule.clone(),String::from(line));
       }
     }
