@@ -2,7 +2,8 @@ use regex::Regex;
 use std::clone::Clone;
 use crate::rules::*;
 
-struct Token<T> where T: Clone + Parser {
+#[derive(Clone)]
+pub struct Token<T> where T: Clone + Parser {
   rule: T,
   value: String,
   html: String,
@@ -10,21 +11,13 @@ struct Token<T> where T: Clone + Parser {
 }
 
 impl<T> Token<T> where T: Clone + Parser {
-  fn new(rule: T, value: String) -> Token<T> {
+  pub(crate) fn new(rule: T, value: String) -> Token<T> {
     let mut token = Token { rule, value, html: String::new(), children: Vec::new() };
     token.set_html(token.rule.parse(token.value.as_str(), token.rule.get_parse_expr()));
     token
   }
 
-  fn get_rule(&self) -> &T {
-    &self.rule
-  }
-
-  fn get_value(&self) -> &String {
-    &self.value
-  }
-
-  fn get_html(&self) -> &String {
+  pub fn get_html(&self) -> &String {
     &self.html
   }
 
@@ -32,27 +25,19 @@ impl<T> Token<T> where T: Clone + Parser {
     self.html = html;
   }
 
-  fn size(&self) -> usize {
-    self.children.len()
-  }
-
-  fn set_child(&mut self, token: Token<T>, index: usize) {
-    self.children.insert(index, token);
-  }
-
-  fn get_child(&self, index: usize) -> &Token<T> {
-    &self.children[index]
+  pub fn set_children(&mut self, tokens: &mut Vec<Token<T>>) {
+    self.children = tokens.clone();
   }
 }
 
-struct Tokenizer<T> where T: Clone + Parser {
+pub struct Tokenizer<T> where T: Clone + Parser {
   rules_block: Vec<T>,
   rules_inline: Vec<T>,
 }
 
 
 impl<T> Tokenizer<T> where T: Clone + Parser {
-  fn new(rules_block: Vec<T>, rules_inline: Vec<T>) -> Tokenizer<T> {
+  pub(crate) fn new(rules_block: Vec<T>, rules_inline: Vec<T>) -> Tokenizer<T> {
     Tokenizer { rules_block, rules_inline }
   }
 
@@ -78,7 +63,7 @@ impl<T> Tokenizer<T> where T: Clone + Parser {
     }
   }
 
-  fn tokenize(&mut self, lines: Vec<&str>) -> Vec<Token<T>> {
+  pub(crate) fn tokenize(&mut self, lines: Vec<&str>) -> Vec<Token<T>> {
     let mut result = Vec::new();
 
     for line in lines.iter() {
@@ -96,30 +81,4 @@ impl<T> Tokenizer<T> where T: Clone + Parser {
 
 
 #[cfg(test)]
-mod tests {
-  use super::*;
-  use regex::Regex;
-  use crate::normalizer::Normalizer;
-  use crate::rules::{Rule};
-
-  #[test]
-  fn test_parse_block() {
-    let docs = String::from("안녕하세요\r\n**오늘은 참 맑네요**\n이럴수가\r");
-    let normalizer = Normalizer::new(docs);
-    let normalized = normalizer.get();
-
-    let paragraph = Rule::new(MDTypes::Paragraph, Regex::new(r"(?P<first>.*)").unwrap(), String::from("<p>$first</p>"));
-    let mut rules_block = Vec::new();
-    rules_block.push(paragraph);
-
-    let strong = Rule::new(MDTypes::Strong, Regex::new(r"(\*\*|__)(?P<first>.+)(\*\*|__)").unwrap(), String::from("<strong>$first</strong>"));
-    let mut rules_inline = Vec::new();
-    rules_inline.push(strong);
-
-    let mut tokenizer = Tokenizer::new(rules_block, rules_inline);
-    let tokens = tokenizer.tokenize(normalized);
-    assert_eq!(tokens.len(), 4);
-    assert_eq!(tokens[0].get_html(), "<p>안녕하세요</p>");
-    assert_eq!(tokens[1].get_html(), "<p><strong>오늘은 참 맑네요</strong></p>");
-  }
-}
+mod tests;

@@ -1,6 +1,7 @@
 mod tokenizer;
 mod rules;
 mod normalizer;
+mod tree;
 
 use wasm_bindgen::prelude::*;
 
