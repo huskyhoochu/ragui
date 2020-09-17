@@ -69,13 +69,25 @@ impl<T> Tokenizer<T> where T: Clone + Parser {
 
   }
 
+  fn parse_inline(&self, token: &mut Token<T>) {
+    for rule in self.rules_inline.iter() {
+      if rule.get_regex().is_match(token.get_html()) {
+        let new_html  = rule.parse(token.get_html(), rule.get_parse_expr());
+        token.set_html(new_html);
+      }
+    }
+  }
+
   fn tokenize(&mut self, lines: Vec<&str>) -> Vec<Token<T>> {
-    let lines_iter = lines.iter();
     let mut result = Vec::new();
 
-    for line in lines_iter {
+    for line in lines.iter() {
       let token = self.parse_block(line);
       result.push(token);
+    }
+
+    for token in result.iter_mut() {
+      self.parse_inline(token);
     }
 
     result
@@ -92,7 +104,7 @@ mod tests {
 
   #[test]
   fn test_parse_block() {
-    let docs = String::from("안녕하세요\r\n오늘은 참 맑네요\n이럴수가\r");
+    let docs = String::from("안녕하세요\r\n**오늘은 참 맑네요**\n이럴수가\r");
     let normalizer = Normalizer::new(docs);
     let normalized = normalizer.get();
 
@@ -107,5 +119,7 @@ mod tests {
     let mut tokenizer = Tokenizer::new(rules_block, rules_inline);
     let tokens = tokenizer.tokenize(normalized);
     assert_eq!(tokens.len(), 4);
+    assert_eq!(tokens[0].get_html(), "<p>안녕하세요</p>");
+    assert_eq!(tokens[1].get_html(), "<p><strong>오늘은 참 맑네요</strong></p>");
   }
 }
